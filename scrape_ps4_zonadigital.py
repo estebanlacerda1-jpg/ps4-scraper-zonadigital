@@ -16,7 +16,6 @@ def scrape_ps4_catalog(max_clicks=80):
         print("📄 Abriendo la página...")
         page.goto("https://zonadigitalmd.com/productos/juegosps4", wait_until="networkidle")
         
-        # Espera larga inicial porque la página es lenta
         print("⏳ Esperando que cargue el JavaScript (15 segundos)...")
         page.wait_for_timeout(15000)
         
@@ -24,12 +23,10 @@ def scrape_ps4_catalog(max_clicks=80):
         print("🔄 Intentando cargar más productos...")
         
         while clicks < max_clicks:
-            # Scroll fuerte
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             time.sleep(3)
             
             try:
-                # Buscar botón de forma muy flexible
                 ver_mas = page.get_by_text(re.compile("ver más", re.I)).first
                 if not ver_mas.is_visible(timeout=3000):
                     ver_mas = page.locator("button, a").filter(has_text=re.compile("ver más", re.I)).first
@@ -46,21 +43,20 @@ def scrape_ps4_catalog(max_clicks=80):
             except:
                 break
         
-        # DIAGNÓSTICO importante
+        # DIAGNÓSTICO
         print("\n🔍 DIAGNÓSTICO:")
         print(f"   Productos detectados con selector común: {page.locator('li.product, .product, article.product').count()}")
         print(f"   Elementos con clase que contiene 'product': {page.locator('[class*=\"product\"]').count()}")
         
-        # Extraer con selectores más amplios
         print("📊 Extrayendo productos...")
-        items = page.locator("li, article, div").filter(has=page.locator("text=/\\$/")).all()  # items que tengan símbolo de precio
+        # Selector amplio: elementos que contienen precio ($ o números con coma/punto)
+        items = page.locator("li, article, div").filter(has_text=re.compile(r"\$\d|,\d{3}")).all()
         
         for item in items:
             try:
-                # Título (cualquier heading o link grande)
                 title = ""
-                for selector in [".woocommerce-loop-product__title", "h2", "h3", "a"]:
-                    elem = item.locator(selector).first
+                for sel in [".woocommerce-loop-product__title", "h2", "h3", "a"]:
+                    elem = item.locator(sel).first
                     if elem.count() > 0:
                         title = elem.inner_text(timeout=3000).strip()
                         if len(title) > 15:
@@ -70,9 +66,8 @@ def scrape_ps4_catalog(max_clicks=80):
                     continue
                 seen_titles.add(title)
                 
-                # Precio
                 price = "No disponible"
-                price_elem = item.locator("text=/\\d+[.,]\\d+/").first
+                price_elem = item.locator(".price, .woocommerce-Price-amount, .amount, text=/\\d+[.,]\\d+/").first
                 if price_elem.count() > 0:
                     price = price_elem.inner_text(timeout=3000).strip()
                     price = re.sub(r'\s+', ' ', price).strip()
@@ -92,15 +87,14 @@ def scrape_ps4_catalog(max_clicks=80):
         browser.close()
     
     if not products:
-        print("\n❌ Todavía no se encontraron productos.")
-        print("   La página carga todo con JavaScript y es difícil de scrapear automáticamente.")
-        print("   Te recomiendo probar la versión que usa la API interna (más confiable).")
+        print("\n❌ No se encontraron productos con los selectores actuales.")
+        print("   La página es muy dinámica y puede estar bloqueando o cambiando estructura.")
         return
     
     df = pd.DataFrame(products)
     df.to_excel("juegos_ps4_zonadigitalmd.xlsx", index=False)
     print(f"\n🎉 ¡Éxito! Se extrajeron {len(products)} productos.")
-    print("Archivo: juegos_ps4_zonadigitalmd.xlsx")
+    print("Archivo generado: juegos_ps4_zonadigitalmd.xlsx")
 
 if __name__ == "__main__":
     scrape_ps4_catalog()
