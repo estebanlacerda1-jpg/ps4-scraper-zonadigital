@@ -1,34 +1,13 @@
-name: Scraper Juegos PS4
+name: Scraper PS4 antiguo (desactivado)
 
+# Se conserva el archivo histórico, pero se quita el schedule para evitar
+# que siga generando y subiendo un Excel con el scraper viejo.
 on:
-  workflow_dispatch:      # Permite ejecutar manualmente desde GitHub
-  schedule:
-    - cron: '0 12 * * 1'   # Se ejecuta automáticamente cada lunes a las 12:00 UTC (ajusta si quieres)
+  workflow_dispatch:
 
 jobs:
-  scrape:
+  disabled:
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          playwright install chromium --with-deps
-      
-      - name: Run scraper
-        run: python scrape_ps4_zonadigital.py
-      
-      - name: Commit and push Excel
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add juegos_ps4_zonadigitalmd.xlsx
-          git commit -m "Actualización automática del catálogo PS4" || echo "No hay cambios"
-          git push
+      - name: Aviso
+        run: echo "Workflow antiguo desactivado. Usar ZonaDigitalMD - prueba de catálogo."
